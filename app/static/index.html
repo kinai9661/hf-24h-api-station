@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24h AI Station - Gen UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="h-screen flex flex-col items-center justify-center p-4">
+    <div class="glass p-8 rounded-2xl shadow-2xl w-full max-w-4xl flex gap-8">
+        
+        <!-- Left: Controls -->
+        <div class="w-1/3 flex flex-col gap-4">
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                AI 生圖介面
+            </h1>
+            
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">選擇模型</label>
+                <select id="modelSelect" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm">
+                    <option value="flux">Flux.1 Schnell (極速)</option>
+                    <option value="sd35">Stable Diffusion 3.5 (高品質)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">提示詞 (Prompt)</label>
+                <textarea id="promptInput" rows="4" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm" placeholder="A futuristic city..."></textarea>
+            </div>
+
+            <button onclick="generateImage()" class="w-full bg-blue-600 hover:bg-blue-500 text-white rounded p-3 transition font-medium">
+                生成圖片
+            </button>
+
+            <!-- API Key Section -->
+            <div class="mt-4 border-t border-slate-700 pt-4">
+                <label class="block text-xs text-gray-400 mb-1">API 金鑰狀態</label>
+                <div class="flex gap-2">
+                    <input type="text" id="apiKeyDisplay" readonly value="等待生成..." class="w-full bg-black/30 border border-slate-700 rounded p-2 text-xs font-mono text-green-400">
+                    <button onclick="getNewKey()" class="text-xs bg-slate-700 px-2 rounded">新金鑰</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Preview -->
+        <div class="w-2/3 bg-black/50 rounded-xl flex items-center justify-center border border-slate-700 min-h-[400px] relative overflow-hidden group">
+            <img id="previewImage" class="max-w-full max-h-full object-contain hidden" alt="Generated Image">
+            <div id="loadingSpinner" class="hidden">
+                <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div id="placeholderText" class="text-gray-500 text-sm">輸入提示詞並點擊生成</div>
+        </div>
+    </div>
+
+    <script>
+        async function getNewKey() {
+            const res = await fetch('/api/key/generate');
+            const data = await res.json();
+            document.getElementById('apiKeyDisplay').value = data.key;
+        }
+
+        async function generateImage() {
+            const prompt = document.getElementById('promptInput').value;
+            const model = document.getElementById('modelSelect').value;
+            const img = document.getElementById('previewImage');
+            const loader = document.getElementById('loadingSpinner');
+            const placeholder = document.getElementById('placeholderText');
+            
+            if(!prompt) return alert('請輸入提示詞');
+
+            loader.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            img.classList.add('hidden');
+
+            try {
+                const res = await fetch('/generate/image', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ prompt, model_id: model })
+                });
+
+                if(res.ok) {
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    img.src = url;
+                    img.classList.remove('hidden');
+                    
+                    // Simulate API Key usage output
+                    const mockKey = res.headers.get('X-API-Key-Used') || 'sk-generated-session-key';
+                    document.getElementById('apiKeyDisplay').value = mockKey + ' (Active)';
+                } else {
+                    alert('生成失敗');
+                }
+            } catch (e) {
+                alert('錯誤: ' + e.message);
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+        
+        // Init key
+        getNewKey();
+    </script>
+</body>
+</html>
