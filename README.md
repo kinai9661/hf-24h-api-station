@@ -1,3 +1,13 @@
+---
+title: 24h API Station
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # 24h API Station for Hugging Face
 
 這是一個整合了解決方案的範本倉庫，包含：
