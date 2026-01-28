@@ -1,0 +1,7 @@
+name = "hf-keep-alive"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Run once every hour to prevent 48h sleep timeout
+[triggers]
+crons = ["0 * * * *"] 
